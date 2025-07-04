@@ -1,0 +1,80 @@
+$(document).ready(function() {
+    console.log('Documento listo, inicializando...');
+
+    // Mostrar el modal inicial (#exampleModal)
+    $('#exampleModal').modal('show');
+    console.log('Mostrando #exampleModal');
+
+    // Configurar el input de la placa
+    const placaInput = document.getElementById('placa');
+    if (placaInput) {
+        placaInput.setAttribute('maxlength', '6');
+        const errorMessage = document.createElement('div');
+        errorMessage.id = 'placaError';
+        errorMessage.style.color = 'red';
+        errorMessage.style.fontSize = '0.9rem';
+        errorMessage.style.marginTop = '-5px';
+        errorMessage.style.marginBottom = '10px';
+        errorMessage.style.display = 'none';
+        placaInput.insertAdjacentElement('afterend', errorMessage);
+
+        placaInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+});
+
+// Función para manejar el clic en el botón Cotizar
+function cotizarWhatsApp() {
+    const placaInput = document.getElementById('placa');
+    const placa = placaInput.value.trim().toUpperCase();
+    const validFormat1 = /^[A-Z]{3}\d{3}$/;
+    const validFormat2 = /^[A-Z]{3}\d{2}[A-Z]$/;
+
+    console.log('Placa ingresada:', placa);
+
+    if (!placa) {
+        document.getElementById('placaError').textContent = 'Por favor, ingresa una placa';
+        document.getElementById('placaError').style.display = 'block';
+        placaInput.classList.add('error');
+        placaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    if (!validFormat1.test(placa) && !validFormat2.test(placa)) {
+        document.getElementById('placaError').textContent = 'Placa inválida';
+        document.getElementById('placaError').style.display = 'block';
+        placaInput.classList.add('error');
+        placaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    document.getElementById('placaError').style.display = 'none';
+    placaInput.classList.remove('error');
+
+    // Enviar notificación al backend
+    fetch('/notify', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ placa: placa })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Respuesta del servidor:', data);
+        if (data.error) {
+            console.error('Error en la notificación:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error al notificar:', error);
+    });
+
+    // Redirigir a WhatsApp Business
+    const phoneNumber = '573205319356'; // Reemplaza con tu número de WhatsApp Business
+    const message = `Hola, quiero comprar el SOAT para la placa ${placa}`;
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    console.log('Redirigiendo a WhatsApp:', whatsappUrl);
+    window.location.href = whatsappUrl;
+}
